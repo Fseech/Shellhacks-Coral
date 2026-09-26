@@ -1,0 +1,8 @@
+{
+  "name": "ReefResilience: Coral Heat-Stress & Resilience Discovery",
+  "description": "An end-to-end hardware and AI system pairing underwater sensor telemetry with NOAA heat-stress data to discover and prioritize resilient coral colonies.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
