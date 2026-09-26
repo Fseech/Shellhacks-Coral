@@ -1,0 +1,4 @@
+.env
+tiger-cloud-reef-credentials.txt
+__pycache__/
+.DS_Store

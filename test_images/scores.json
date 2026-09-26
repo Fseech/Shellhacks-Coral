@@ -1,0 +1,82 @@
+{
+  "img_001.jpeg": {
+    "is_coral": true,
+    "coral_type": "staghorn coral",
+    "health": "bleached",
+    "paleness": 5,
+    "confidence": 0.95,
+    "reason": "The branching coral in the foreground exhibits extensive whitening across nearly all of its branches."
+  },
+  "img_002.jpeg": {
+    "is_coral": true,
+    "coral_type": "stony coral",
+    "health": "bleached",
+    "paleness": 6,
+    "confidence": 0.95,
+    "reason": "The entire visible coral surface and polyps are completely white with no apparent zooxanthellae pigmentation."
+  },
+  "img_003.jpeg": {
+    "is_coral": true,
+    "coral_type": "honeycomb coral",
+    "health": "bleached",
+    "paleness": 6,
+    "confidence": 0.95,
+    "reason": "The coral colony appears completely stark white with intact tissue and extended polyps."
+  },
+  "img_004.jpeg": {
+    "is_coral": true,
+    "coral_type": "table coral",
+    "health": "bleached",
+    "paleness": 5,
+    "confidence": 0.95,
+    "reason": "Numerous table corals across the reef display distinct bleaching, with bright white, pale yellow, and fluorescent pink and blue hues."
+  },
+  "img_005.jpeg": {
+    "is_coral": true,
+    "coral_type": "table coral",
+    "health": "bleached",
+    "paleness": 5,
+    "confidence": 0.95,
+    "reason": "Numerous table corals display stark whitening and bright fluorescent pastel coloration across the reef."
+  },
+  "img_006.jpeg": {
+    "is_coral": true,
+    "coral_type": "brain coral",
+    "health": "bleached",
+    "paleness": 5,
+    "confidence": 0.95,
+    "reason": "The brain coral colony has lost most of its typical pigmentation, appearing almost completely white with very faint coloration remaining."
+  },
+  "img_007.jpeg": {
+    "is_coral": false,
+    "coral_type": "unknown",
+    "health": "healthy",
+    "paleness": 1,
+    "confidence": 1.0,
+    "reason": "This image is a global NOAA map showing coral bleaching heat stress probabilities rather than an image of a coral."
+  },
+  "img_009.jpeg": {
+    "is_coral": false,
+    "coral_type": "unknown",
+    "health": "healthy",
+    "paleness": 1,
+    "confidence": 0.95,
+    "reason": "The central subject of the photo is a large fish swimming over a diverse coral reef."
+  },
+  "img_008.jpeg": {
+    "is_coral": true,
+    "coral_type": "fire coral",
+    "health": "bleached",
+    "paleness": 6,
+    "confidence": 0.9,
+    "reason": "The upright, blade-forming coral colony across the center of the reef is stark white."
+  },
+  "img_012.jpeg": {
+    "is_coral": true,
+    "coral_type": "fire coral",
+    "health": "healthy",
+    "paleness": 2,
+    "confidence": 0.85,
+    "reason": "The branching fire coral displays consistent mustard-brown pigmentation across its branches with normal pale growth tips."
+  }
+}
