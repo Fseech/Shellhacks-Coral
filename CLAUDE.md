@@ -8,12 +8,33 @@ Every part connects only to one cloud database. The parts never talk to each oth
 
 | Part | Code | Database access | Picks up | Sets |
 |------|------|-----------------|----------|------|
-| Device (2 Arduinos + Raspberry Pi) | not in repo yet | INSERT only | – | `status = 'new'` |
+| Device (2 Arduinos + Raspberry Pi) | `device/` | INSERT only | – | `status = 'new'` |
 | AI scorer | `worker.py` | SELECT + UPDATE | `status = 'new'` | `scored` or `error` |
 | Heat analyzer | `analyze.py` | SELECT + UPDATE | `status IN ('scored','analyzed')` | `analyzed` |
 | Website | `dashboard.py` (Streamlit) | SELECT only | `status = 'analyzed'` | – |
 
 Device: Arduino 1 reads temperature from a Grid-EYE sensor and has a start/stop recording button. Arduino 2 shows status on an LED screen. The Pi records video, keeps only important snapshots, tags each with time, location, depth and temperature, stores them locally, and uploads them over Wi-Fi.
+
+### Device code (`device/`)
+
+| File | Runs on | Job |
+|------|---------|-----|
+| `device/arduino_reefwatch/arduino_reefwatch.ino` | One Arduino | Sensor + button + screen merged into one sketch; the Pi uses its single port for both jobs |
+| `device/arduino_sensor/arduino_sensor.ino` | Arduino 1 | Averages the Grid-EYE's 64 pixels into one temperature; pin 2 button toggles recording |
+| `device/arduino_display/arduino_display.ino` | Arduino 2 | Shows the lines the Pi sends on the 16x2 screen (QAPASS 1602A, needs 5 V) |
+| `device/arduino_all_in_one/arduino_all_in_one.ino` | One Arduino (breadboard prototype) | Sensor, button and screen together; use instead of the two sketches above when everything is on one board |
+| `device/pi/capture.py` | Raspberry Pi | Camera, snapshot filter, tagging, outbox, upload; relays temperature and status to the screen |
+| `device/pi/PI_SETUP.md` | – | Step-by-step Pi setup |
+
+Both Arduinos plug into the Pi by USB at 115200 baud. The Pi tells them apart by what they send:
+
+| Direction | Message | Meaning |
+|-----------|---------|---------|
+| Arduino 1 → Pi | `{"temp_c":24.6,"recording":1}` once a second and on every press | Grid-EYE average (`null` if the sensor is missing) and the button state |
+| Arduino 2 → Pi | `=== ReefWatch display ===` at startup | Identifies the screen Arduino |
+| Pi → Arduino 2 | `1:Temp 24.6C` and `2:REC   Pics:12` once a second | Text for screen line 1 and line 2 |
+
+The Pi saves a snapshot only while recording is on. Location is a simulated boat route for the demo (`location_source = simulated`), and those rows are marked `is_test`. The Grid-EYE is infrared and reads the surface it sees, not water temperature.
 
 Keep these access rules when changing code: the device never updates, processors never insert, and the website never writes.
 
@@ -38,6 +59,15 @@ Written by the device:
 | `image_data` | BYTEA | the JPEG bytes (photos are stored in the database) |
 | `image_path` | TEXT | original file name, label only |
 | `status` | TEXT | default `'new'` |
+| `temp_c` | DOUBLE PRECISION | Grid-EYE temperature from Arduino 1 (°C), NULL if the sensor was missing |
+| `depth_m` | DOUBLE PRECISION | depth in meters, entered by hand for now |
+| `trigger` | TEXT | why the frame was kept, e.g. `auto` |
+| `survey_id` | TEXT | which dive or survey |
+| `meta` | JSONB | every tag the device saved (clock sync, location source, filter numbers, software version) |
+| `is_test` | BOOLEAN | TRUE for test, demo or simulated-location data |
+| `test_note` | TEXT | what is simulated and why |
+
+The device columns are created by `database.create_table()` (run `python3 -c "import database; database.create_table()"` once from the repo folder), so the device itself only INSERTs.
 
 Written by the AI scorer (`worker.py`, Gemini):
 
@@ -58,8 +88,6 @@ Written by the heat analyzer (`analyze.py`, NOAA Coral Reef Watch via `heat.py`)
 | `neighbor_median` | DOUBLE PRECISION | neighbors' median paleness |
 | `verdict` | TEXT | see below |
 | `verdict_reason` | TEXT | plain-English explanation shown on the website |
-
-Planned, not in the table yet: `depth_m` and `temp_c` (Grid-EYE temperature) from the device.
 
 ### Verdicts
 

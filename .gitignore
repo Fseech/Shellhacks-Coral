@@ -2,3 +2,7 @@
 tiger-cloud-reef-credentials.txt
 __pycache__/
 .DS_Store
+
+# device photos (local only; uploaded to Tiger Data, never to git)
+device/pi/outbox/
+device/pi/sent/
