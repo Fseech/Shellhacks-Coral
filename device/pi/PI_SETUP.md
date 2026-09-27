@@ -9,7 +9,6 @@ The Pi runs the camera. One Arduino plugs into the Pi by USB. It has the Grid-EY
 Press the button once to start recording and press it again to stop. While recording, the Pi saves only the "interesting" frames. Each saved photo gets these tags:
 - time
 - location (a simulated boat route for the demo)
-- depth
 - Grid-EYE temperature
 
 ## Files on the Pi (put them together in `~/reef`)
@@ -72,7 +71,6 @@ Useful options:
 - `--usb` uses a USB webcam instead of the Pi Camera Module.
 - `--video reef.mp4` uses a recorded video instead of the camera.
 - `--demo-date 2023-08-20` stamps photos with a past survey date, so they line up with real NOAA heat data.
-- `--depth 6` sets the depth in meters (the default is 4).
 - `--no-upload` saves to `outbox/` only.
 - `--always` records without the button.
 
@@ -96,6 +94,6 @@ Uploaded 20260926T153318_ffc728
 - **"Arduino ... not found":** check the USB cable, then run `ls /dev/ttyACM*` (you should see one). Close Arduino IDE's Serial Monitor, since only one program can use the port. If you get "permission denied", run `sudo usermod -aG dialout $USER`, then log out and back in.
 - **`temp=None`:** the Arduino can't see the Grid-EYE. Check its 4 wires.
 - **Screen says "(no Pi)":** capture.py didn't recognize the Arduino. Unplug and replug it, then restart capture.py.
-- **"The table is missing device columns":** run `python3 -c "import database; database.create_table()"` once on the laptop, in the repo's `pipeline/` folder (it adds `temp_c`, `depth_m` and the other device columns).
+- **"The table is missing device columns":** run `python3 -c "import database; database.create_table()"` once on the laptop, in the repo's `pipeline/` folder (it adds `temp_c` and the other device columns).
 - **Nothing saves while recording:** the filter only keeps frames that look like reef and have changed since the last photo. Point the camera at something colorful and move it. The `frame ...` status lines show the filter numbers.
 - **"Upload failed":** check the hotspot, and check that `echo $DATABASE_URL` prints something.

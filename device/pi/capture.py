@@ -6,7 +6,7 @@ capture.py - the ReefWatch device (runs on the Raspberry Pi).
   Its screen shows temperature, REC/Paused and photo count.
   While ON: camera frames -> quick color check -> "significant" frame? -> save photo + metadata to outbox/
   uploader (background) -> sends outbox/ to Tiger Data, retries when offline -> moves to sent/
-  Every saved photo gets: time, simulated location, depth, Grid-EYE temperature.
+  Every saved photo gets: time, simulated location, Grid-EYE temperature.
 
 Run on the Pi:
     python3 capture.py                     # Pi Camera Module (or USB webcam if no Pi camera)
@@ -59,7 +59,6 @@ SENT = "sent"
 ROUTE_START = (24.5460, -81.4060)     # Looe Key, Florida Keys
 ROUTE_HEADING_DEG = 45                # north-east
 ROUTE_SPEED_M_S = 0.5                 # slow drift over the reef
-DEFAULT_DEPTH_M = 4.0                 # entered by hand (no depth sensor)
 
 # "Significant frame" filter
 GRID = 8                    # split each frame into 8 x 8 blocks
@@ -217,7 +216,6 @@ def save_snapshot(frame, trigger, stats, arduino, args):
         "device_clock_utc": captured.isoformat(),
         "clock_synced": clock_synced(),
         "lat": lat, "lon": lon, "location_source": loc_source,
-        "depth_m": args.depth, "depth_source": "manual",
         "temp_c": temp_c,
         "temp_source": "Grid-EYE AMG8833 (infrared, surface reading)" if temp_c is not None else None,
         "demo_mode": "color_card (red = alive, blue = dead)" if demo else None,
@@ -256,11 +254,11 @@ def upload_loop(arduino):
                         photo = f.read()
                     cur.execute("""
                         INSERT INTO snapshots (image_path, taken_at, lat, lon, image_data, device_id,
-                                               depth_m, temp_c, trigger, survey_id, meta,
+                                               temp_c, trigger, survey_id, meta,
                                                is_test, test_note)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
                         (os.path.basename(image_path), meta["taken_at"], meta["lat"], meta["lon"],
-                         psycopg2.Binary(photo), meta["device_id"], meta["depth_m"],
+                         psycopg2.Binary(photo), meta["device_id"],
                          meta["temp_c"], meta["trigger"], meta["survey_id"], json.dumps(meta),
                          meta["demo_date_used"] or meta["location_source"] == "simulated"
                          or bool(meta.get("demo_mode")),
@@ -305,7 +303,6 @@ def main():
     parser.add_argument("--usb", action="store_true", help="use a USB webcam")
     parser.add_argument("--video", help="use a recorded video file instead of the camera")
     parser.add_argument("--demo-date", help="stamp snapshots with this date, e.g. 2023-08-20")
-    parser.add_argument("--depth", type=float, default=DEFAULT_DEPTH_M, help="depth in meters")
     parser.add_argument("--survey-id", default=now_utc().strftime("survey-%Y%m%d-%H%M"))
     parser.add_argument("--no-upload", action="store_true", help="only save to the outbox")
     parser.add_argument("--color-demo", action="store_true",

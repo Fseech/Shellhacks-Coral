@@ -20,7 +20,7 @@ The Explore page reads only `status = 'analyzed'` rows from `snapshots`. Reef
 suggestions use the named points in `regions.py`; the default search radius is
 10 km and can be adjusted. Researchers can also enter latitude/longitude
 directly. Suggestions include a recent analyzed coral photo when one is stored.
-In-water `temp_c` and `depth_m` appear when those columns exist and contain data.
+In-water `temp_c` appears when that column exists and contains data.
 
 The **Generate in-depth analysis** action is optional. Configure
 `GEMINI_API_KEY` as a server-side secret to enable it; the default model is

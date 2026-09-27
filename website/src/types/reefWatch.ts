@@ -26,7 +26,6 @@ export interface ReefObservation {
   neighbor_median: number | null;
   verdict: string | null;
   verdict_reason: string | null;
-  depth_m: number | null;
   temp_c: number | null;
   distance_km: number;
 }

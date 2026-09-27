@@ -574,8 +574,6 @@ interface CoralSummary {
   healthy: number;
   candidates: number;
   warmestHealthyTemp: number | null;
-  minDepth: number | null;
-  maxDepth: number | null;
 }
 
 function summarizeCoralTypes(observations: ReefObservation[]): CoralSummary[] {
@@ -588,8 +586,6 @@ function summarizeCoralTypes(observations: ReefObservation[]): CoralSummary[] {
       healthy: 0,
       candidates: 0,
       warmestHealthyTemp: null,
-      minDepth: null,
-      maxDepth: null,
     };
     summary.total += 1;
     if (observation.health === 'healthy') {
@@ -599,10 +595,6 @@ function summarizeCoralTypes(observations: ReefObservation[]): CoralSummary[] {
       }
     }
     if (observation.verdict === 'resistant_candidate') summary.candidates += 1;
-    if (observation.depth_m !== null) {
-      summary.minDepth = summary.minDepth === null ? observation.depth_m : Math.min(summary.minDepth, observation.depth_m);
-      summary.maxDepth = summary.maxDepth === null ? observation.depth_m : Math.max(summary.maxDepth, observation.depth_m);
-    }
     summaries.set(coralType, summary);
   });
   return [...summaries.values()].sort((left, right) => left.coralType.localeCompare(right.coralType));
@@ -636,7 +628,6 @@ function CoralComparisonTable({ locations, observations }: { locations: string[]
                         <strong>{summary.total} {summary.total === 1 ? 'snapshot' : 'snapshots'}</strong>
                         <span>{summary.healthy} healthy · {summary.candidates} candidate{summary.candidates === 1 ? '' : 's'}</span>
                         <span>Warmest healthy: {formatValue(summary.warmestHealthyTemp, '°C')}</span>
-                        <span>Depth recorded: {formatDepth(summary.minDepth, summary.maxDepth)}</span>
                       </div>
                     ) : <span className="no-type-records">No records</span>}
                   </td>
@@ -648,11 +639,6 @@ function CoralComparisonTable({ locations, observations }: { locations: string[]
       </table>
     </div>
   );
-}
-
-function formatDepth(minimum: number | null, maximum: number | null) {
-  if (minimum === null || maximum === null) return 'Not recorded';
-  return minimum === maximum ? `${minimum} m` : `${minimum}-${maximum} m`;
 }
 
 function LocationRecords({ place, radiusKm, observations }: { place: string; radiusKm: number; observations: ReefObservation[] }) {
@@ -720,7 +706,6 @@ function ObservationRow({ observation }: { observation: ReefObservation }) {
               <span><b>Neighbors</b> {formatValue(observation.neighbor_count)} within 50 m / 7 d</span>
               <span><b>Neighbor median</b> {formatValue(observation.neighbor_median, '/6')}</span>
               <span><b>Water temperature</b> {formatValue(observation.temp_c, '°C')}</span>
-              <span><b>Depth</b> {formatValue(observation.depth_m, ' m')}</span>
             </>
           )}
         </div>

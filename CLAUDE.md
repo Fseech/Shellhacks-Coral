@@ -15,7 +15,7 @@ Every part connects only to one cloud database. The parts never talk to each oth
 | Heat analyzer | `pipeline/analyze.py` | SELECT + UPDATE | `status IN ('scored','analyzed')` | `analyzed` |
 | Website | `website/` (React + Express, `webServer.ts`) | SELECT only | `status = 'analyzed'` | – |
 
-Device: one Arduino reads temperature from a Grid-EYE sensor, has a start/stop recording button and shows status on a 16x2 screen. The Pi records video, keeps only important snapshots, tags each with time, location, depth and temperature, stores them locally, and uploads them over Wi-Fi.
+Device: one Arduino reads temperature from a Grid-EYE sensor, has a start/stop recording button and shows status on a 16x2 screen. The Pi records video, keeps only important snapshots, tags each with time, location and temperature, stores them locally, and uploads them over Wi-Fi.
 
 ## Layout
 
@@ -105,7 +105,6 @@ Written by the device:
 | `image_path` | TEXT | original file name, label only |
 | `status` | TEXT | default `'new'` |
 | `temp_c` | DOUBLE PRECISION | Grid-EYE temperature from the Arduino (°C), NULL if the sensor was missing |
-| `depth_m` | DOUBLE PRECISION | depth in meters, entered by hand for now |
 | `trigger` | TEXT | why the frame was kept, e.g. `auto` |
 | `survey_id` | TEXT | which dive or survey |
 | `meta` | JSONB | every tag the device saved (clock sync, location source, filter numbers, software version) |

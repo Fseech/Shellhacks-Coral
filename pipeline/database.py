@@ -34,8 +34,7 @@ def create_table():
     cur.execute("ALTER TABLE snapshots ADD COLUMN IF NOT EXISTS image_data BYTEA")
     cur.execute("ALTER TABLE snapshots ADD COLUMN IF NOT EXISTS device_id TEXT")
     # columns written by the device (device/pi/capture.py)
-    for column in ["depth_m DOUBLE PRECISION",       # depth in meters (entered by hand for now)
-                   "temp_c DOUBLE PRECISION",        # Grid-EYE temperature from Arduino 1
+    for column in ["temp_c DOUBLE PRECISION",        # Grid-EYE temperature from Arduino 1
                    "trigger TEXT",                   # why the photo was kept, e.g. 'auto'
                    "survey_id TEXT",                 # which dive / survey
                    "meta JSONB",                     # every tag the device saved, as JSON

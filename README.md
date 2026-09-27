@@ -21,5 +21,5 @@ We want to learn which kinds of coral stay alive longer in heat that would other
 - Comparing coral species is the goal. Keep the coral type accurate and consistent, and group or filter by it wherever possible.
 - Findings are leads, not proof. Say "candidate" and "may be", never "proven heat-resistant"; scientists confirm with follow-up tests.
 - Label test and simulated data honestly.
-- The audience is mixed: plain language for hobbyists, real units (°C, meters, Degree Heating Weeks) and exportable data for scientists.
+- The audience is mixed: plain language for hobbyists, real units (°C, Degree Heating Weeks) and exportable data for scientists.
 - Technical details (architecture, database, device, how to run it) are in `CLAUDE.md`.
