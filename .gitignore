@@ -12,3 +12,6 @@ website/node_modules/
 website/dist/
 website/.env
 website/.env.local
+
+# NOAA daily heat files (large, re-downloaded on demand)
+.noaa_cache/

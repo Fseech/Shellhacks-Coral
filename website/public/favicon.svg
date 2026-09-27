@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <path id="half" d="M32 52 C27 48 20 45 13 41 M13 41 C10 39 8 36 6 32 M13 41 C10 42 7 43 4 42 M29 49 C26 43 23 37 21 30 M21 30 C19 26 16 23 13 20 M21 30 C21 25 22 21 22 16 M13 20 C12 17 11 15 9 13 M13 20 C11 20 9 21 7 23 M22 16 C21 13 20 11 18 9 M22 16 C23 13 25 11 26 9 M32 34 C30 28 29 23 28 18 M28 18 C27 15 27 12 26 9"/>
+    <path id="mid" d="M32 60 V30 M32 30 V21 M32 21 V15"/>
+  </defs>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <g stroke="#c24848" stroke-width="5.4">
+      <use href="#half"/><use href="#half" transform="matrix(-1 0 0 1 64 0)"/><use href="#mid"/>
+      <path d="M26 60 H38" stroke-width="6"/>
+    </g>
+    <g stroke="#ea7070" stroke-width="3.4">
+      <use href="#half"/><use href="#half" transform="matrix(-1 0 0 1 64 0)"/><use href="#mid"/>
+      <path d="M27 60 H37" stroke-width="4"/>
+    </g>
+    <g stroke="#fdc4b6" stroke-width="1.2" opacity="0.95">
+      <path d="M31 55 V47 M31 40 V33 M21 33 C20 30 19 28 18 26 M43 33 C44 30 45 28 46 26 M15 41 C12 39 10 37 9 35 M49 41 C52 39 54 37 55 35"/>
+    </g>
+  </g>
+</svg>
