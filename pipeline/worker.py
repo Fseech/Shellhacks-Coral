@@ -53,7 +53,10 @@ def process_new_snapshots():
     cur.execute("SELECT id, taken_at, image_data FROM snapshots WHERE status = 'new'")
     rows = cur.fetchall()
 
+    import pause
     for row in rows:
+        if pause.is_paused():
+            break                                  # paused mid-batch: the rest wait for "REC"
         print("Scoring snapshot", row["id"], "...")
         try:
             if row["image_data"] is None:
@@ -83,7 +86,13 @@ def process_new_snapshots():
 
 
 if __name__ == "__main__":
+    import pause
     print("AI worker running. Press Ctrl+C to stop.")
     while True:
-        process_new_snapshots()
+        pause.wait_while_paused("AI worker")      # the ReefWatch button can pause scoring
+        try:
+            process_new_snapshots()
+        except Exception as e:                     # e.g. database unreachable: wait and retry
+            print("AI worker: could not reach the database, retrying in 15 s:", e.__class__.__name__, flush=True)
+            time.sleep(15)
         time.sleep(3)

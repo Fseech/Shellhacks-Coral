@@ -1,7 +1,9 @@
 """
 capture.py - the ReefWatch device (runs on the Raspberry Pi).
 
-  The Arduino's button toggles recording ON / OFF. Its screen shows temperature, REC and photo count.
+  The Arduino's button is a master switch: REC = everything runs; Paused = the camera, uploads,
+  AI scoring (worker.py) and analyzer (analyze.py) all wait, and pick up where they left off on the next press.
+  Its screen shows temperature, REC/Paused and photo count.
   While ON: camera frames -> quick color check -> "significant" frame? -> save photo + metadata to outbox/
   uploader (background) -> sends outbox/ to Tiger Data, retries when offline -> moves to sent/
   Every saved photo gets: time, simulated location, depth, Grid-EYE temperature.
@@ -29,6 +31,15 @@ from datetime import datetime, timezone
 
 import cv2
 import numpy as np
+
+# the shared pause switch lives in ../../pipeline/pause.py
+sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "pipeline"))
+try:
+    import pause
+except ImportError:   # older flat layout without pause.py: pausing still works inside capture.py
+    class pause:
+        @staticmethod
+        def set_paused(flag): pass
 
 # ------------------------------------------------------------------ settings
 DEVICE_ID = "reefcam-1"
@@ -130,6 +141,11 @@ class Arduinos:
             except Exception:
                 time.sleep(0.5)
 
+    @property
+    def paused(self):
+        """True when the Arduino's button says Paused. With no Arduino, nothing is paused."""
+        return self.sensor is not None and not self.recording
+
     def show(self, line1, line2):
         """Writes two lines on the Arduino's screen (16 characters each)."""
         try:
@@ -210,7 +226,9 @@ def upload_loop(arduino):
     import psycopg2
     while True:
         waiting = sorted(glob.glob(os.path.join(OUTBOX, "*.json")))
-        if waiting:
+        if waiting and arduino.paused:
+            pass                      # paused by the button: photos wait in the outbox
+        elif waiting:
             try:
                 con = connect()
                 cur = con.cursor()
@@ -294,8 +312,31 @@ def main():
     else:
         print("No Arduino and no --always: nothing will be recorded. "
               "Plug in the Arduino, or run with --always to test the camera.")
+    was_paused = None
     try:
         while True:
+            now = time.time()
+            recording = args.always or arduino.recording
+            paused = arduino.paused and not args.always
+
+            # ---- the button pauses EVERYTHING: camera, uploads, AI scoring, analyzer ----
+            if paused != was_paused:
+                pause.set_paused(paused)
+                if was_paused is not None:
+                    print(">>> PAUSED: camera, uploads and analysis stopped" if paused
+                          else ">>> RESUMED: everything running again", flush=True)
+                if not paused and was_paused:
+                    for _ in range(5):          # throw away stale frames the camera buffered
+                        read_frame()
+                was_paused = paused
+            if paused:
+                if now - last_screen >= 1:
+                    last_screen = now
+                    temp = f"{arduino.temp_c:.1f}C" if arduino.temp_c is not None else "--"
+                    arduino.show(f"Temp {temp}", f"Paused Pics:{saved}")
+                time.sleep(0.2)
+                continue
+
             frame = read_frame()
             if frame is None:
                 if args.video:
@@ -307,9 +348,7 @@ def main():
             frames += 1
             stats = frame_stats(frame)
             change, small = scene_change(frame, last_small)
-            now = time.time()
 
-            recording = args.always or arduino.recording
             if (recording
                     and now - last_save > COOLDOWN_S
                     and stats["coral_fraction"] >= MIN_CORAL_FRACTION
@@ -332,6 +371,8 @@ def main():
                 time.sleep(1 / 30)   # play recorded video at about real speed
     except KeyboardInterrupt:
         pass
+    finally:
+        pause.set_paused(False)   # never leave the other programs stuck on "paused"
     print("Stopped. Waiting 6 seconds for the last uploads...")
     time.sleep(6)
 

@@ -116,8 +116,20 @@ def analyze_all():
 
 
 if __name__ == "__main__":
-    add_analysis_columns()
+    import pause
+    while True:                                    # wait for the database if it's unreachable at start
+        try:
+            add_analysis_columns()
+            break
+        except Exception as e:
+            print("Analyzer: could not reach the database, retrying in 15 s:", e.__class__.__name__, flush=True)
+            time.sleep(15)
     print("Analyzer running. Press Ctrl+C to stop.")
     while True:
-        analyze_all()
+        pause.wait_while_paused("Analyzer")         # the ReefWatch button can pause the analyzer
+        try:
+            analyze_all()
+        except Exception as e:
+            print("Analyzer: could not reach the database, retrying in 15 s:", e.__class__.__name__, flush=True)
+            time.sleep(15)
         time.sleep(5)
