@@ -59,4 +59,3 @@ cd website && npm install && npm run dev   # http://localhost:3000, reads DATABA
 - **Location.** GPS doesn't work underwater. For the demo, snapshots use a simulated boat route, and those rows are marked as test data in the database.
 - **Temperature.** The Grid-EYE is an infrared sensor and reads the surface it sees, not the water. A waterproof probe (DS18B20) or a pressure/temperature sensor (MS5837) would replace it on a real dive.
 - **Heat data.** NOAA's heat-stress data comes on a grid about 5 km wide, so neighboring corals share one heat value. The verdict marks candidates for testing; it doesn't prove heat resistance.
-- **Test photos.** The test photos are freely licensed images from Wikimedia Commons. The photographer and license for each one are in `pipeline/test_images/credits.csv`.

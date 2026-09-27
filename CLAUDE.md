@@ -22,10 +22,10 @@ Device: one Arduino reads temperature from a Grid-EYE sensor, has a start/stop r
 | `device/arduino_reefwatch/arduino_reefwatch.ino` | The Arduino sketch: Grid-EYE average, pin 2 record button, 16x2 screen (QAPASS 1602A, needs 5 V) |
 | `device/pi/capture.py` | Raspberry Pi (or a Mac for testing): camera, snapshot filter, tagging, outbox, upload; sends screen lines to the Arduino |
 | `device/pi/PI_SETUP.md` | Step-by-step Pi setup |
-| `pipeline/` | Cloud programs: `database.py`, `worker.py`, `analyze.py`, `heat.py` (+ `heat_cache.json`), and test-data tools `get_test_images.py`, `score_test_images.py`, `seed_test_data.py` (+ `regions.py`, `test_images/`) |
+| `pipeline/` | Cloud programs: `database.py`, `worker.py`, `analyze.py`, `heat.py` (+ `heat_cache.json`) |
 | `website/` | React site served by `webServer.ts` (`npm install`, `npm run dev`, port 3000). Reads `WEBSITE_DATABASE_URL` or `DATABASE_URL`; optional Gemini summary needs `GEMINI_API_KEY`. See `website/README.md` |
 
-Run pipeline scripts from inside `pipeline/`: they use relative paths (`test_images/`, `heat_cache.json`). `capture.py` imports `database` from `pipeline/`.
+Run pipeline scripts from inside `pipeline/`: `heat.py` reads and writes `heat_cache.json` in the current folder. `capture.py` imports `database` from `pipeline/`.
 
 Serial messages (USB, 115200 baud). The Pi finds the Arduino's port by what it sends:
 
