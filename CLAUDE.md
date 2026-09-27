@@ -11,7 +11,7 @@ Every part connects only to one cloud database. The parts never talk to each oth
 | Device (1 Arduino + Raspberry Pi) | `device/` | INSERT only | – | `status = 'new'` |
 | AI scorer | `pipeline/worker.py` | SELECT + UPDATE | `status = 'new'` | `scored` or `error` |
 | Heat analyzer | `pipeline/analyze.py` | SELECT + UPDATE | `status IN ('scored','analyzed')` | `analyzed` |
-| Website | `website/` (React + Express) | none yet: shows built-in sample observations | – | – |
+| Website | `website/` (React + Express, `webServer.ts`) | SELECT only | `status = 'analyzed'` | – |
 
 Device: one Arduino reads temperature from a Grid-EYE sensor, has a start/stop recording button and shows status on a 16x2 screen. The Pi records video, keeps only important snapshots, tags each with time, location, depth and temperature, stores them locally, and uploads them over Wi-Fi.
 
@@ -23,7 +23,7 @@ Device: one Arduino reads temperature from a Grid-EYE sensor, has a start/stop r
 | `device/pi/capture.py` | Raspberry Pi (or a Mac for testing): camera, snapshot filter, tagging, outbox, upload; sends screen lines to the Arduino |
 | `device/pi/PI_SETUP.md` | Step-by-step Pi setup |
 | `pipeline/` | Cloud programs: `database.py`, `worker.py`, `analyze.py`, `heat.py` (+ `heat_cache.json`), and test-data tools `get_test_images.py`, `score_test_images.py`, `seed_test_data.py` (+ `regions.py`, `test_images/`) |
-| `website/` | React site (`npm install`, `npm run dev`, port 3000). Runs on sample data in `server.ts` and `src/data/mockObservations.ts`; not connected to the database |
+| `website/` | React site served by `webServer.ts` (`npm install`, `npm run dev`, port 3000). Reads `WEBSITE_DATABASE_URL` or `DATABASE_URL`; optional Gemini summary needs `GEMINI_API_KEY`. See `website/README.md` |
 
 Run pipeline scripts from inside `pipeline/`: they use relative paths (`test_images/`, `heat_cache.json`). `capture.py` imports `database` from `pipeline/`.
 
@@ -128,5 +128,4 @@ High heat means `dhw >= 4`.
 
 ## Known gaps
 
-- The website doesn't read the database yet; it shows sample observations.
 - All programs share one admin login, so the access rules above are not enforced by the database. The plan is separate `device`, `processor` and `website` roles.

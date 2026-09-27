@@ -10,3 +10,5 @@ device/pi/sent/
 # website
 website/node_modules/
 website/dist/
+website/.env
+website/.env.local

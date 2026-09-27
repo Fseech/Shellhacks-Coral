@@ -1,0 +1,17 @@
+export const REEF_LOCATIONS = [
+  { name: 'Florida Keys - Looe Key', lat: 24.546, lon: -81.406 },
+  { name: 'Florida Keys - Molasses Reef', lat: 25.01, lon: -80.376 },
+  { name: 'Great Barrier Reef - Moore Reef', lat: -16.87, lon: 146.23 },
+  { name: 'Great Barrier Reef - Heron Reef', lat: -23.45, lon: 151.95 },
+  { name: 'Red Sea - Gulf of Aqaba', lat: 29.45, lon: 34.93 },
+  { name: 'Maldives - North Male Atoll', lat: 4.3, lon: 73.55 },
+  { name: 'Hawaii - Maui', lat: 20.63, lon: -156.5 },
+  { name: 'Caribbean - Bonaire', lat: 12.15, lon: -68.3 },
+  { name: 'Belize Barrier Reef', lat: 17.2, lon: -87.55 },
+  { name: 'Mexico - Puerto Morelos', lat: 20.85, lon: -86.85 },
+  { name: 'Indonesia - Raja Ampat', lat: -0.55, lon: 130.5 },
+  { name: 'Philippines - Tubbataha', lat: 8.9, lon: 119.9 },
+  { name: 'Kenya - Mombasa', lat: -4.05, lon: 39.73 },
+  { name: 'Seychelles', lat: -4.6, lon: 55.45 },
+  { name: 'Fiji', lat: -17, lon: 179 },
+] as const;

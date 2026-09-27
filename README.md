@@ -25,7 +25,7 @@ A low-cost device and cloud pipeline that finds corals that might resist heat. I
    | Something besides heat | Low heat, but this patch is pale: check for sewage, runoff or disease |
    | As expected | The coral's color fits its neighbors and the heat |
 
-4. **Website** (`website/`). Browse observations, resistant candidates and trends.
+4. **Website** (`website/`). Reads the finished (analyzed) results from the database: search by reef or coordinates, see each coral's photo, scores, heat and verdict. An optional button asks Gemini for an in-depth summary of a location.
 
 Each part talks only to the database, never to the other parts. The device only adds rows, the processing programs only read and update them, and the website only reads. Any part can be restarted or replaced on its own, and more devices can be added anywhere without changing anything else.
 
@@ -36,7 +36,7 @@ Each part talks only to the database, never to the other parts. The device only 
 | `device/arduino_reefwatch/` | Arduino sketch: Grid-EYE temperature, record button, 16x2 screen |
 | `device/pi/` | `capture.py` (camera, frame filter, tagging, offline outbox, upload) and `PI_SETUP.md` |
 | `pipeline/` | Database schema, AI scorer, heat analyzer, NOAA client and test-data tools |
-| `website/` | React + Express front end |
+| `website/` | React + Express site that reads analyzed results from the database |
 
 ## Running it
 
@@ -51,7 +51,7 @@ python3 analyze.py     # heat analyzer
 python3 capture.py     # see device/pi/PI_SETUP.md
 
 # website
-cd website && npm install && npm run dev   # http://localhost:3000
+cd website && npm install && npm run dev   # http://localhost:3000, reads DATABASE_URL (see website/README.md)
 ```
 
 ## Honest limits
@@ -59,5 +59,4 @@ cd website && npm install && npm run dev   # http://localhost:3000
 - **Location.** GPS doesn't work underwater. For the demo, snapshots use a simulated boat route, and those rows are marked as test data in the database.
 - **Temperature.** The Grid-EYE is an infrared sensor and reads the surface it sees, not the water. A waterproof probe (DS18B20) or a pressure/temperature sensor (MS5837) would replace it on a real dive.
 - **Heat data.** NOAA's heat-stress data comes on a grid about 5 km wide, so neighboring corals share one heat value. The verdict marks candidates for testing; it doesn't prove heat resistance.
-- **Website data.** The website currently shows sample observations. The pipeline's results are stored in the database but aren't connected to the site yet.
 - **Test photos.** The test photos are freely licensed images from Wikimedia Commons. The photographer and license for each one are in `pipeline/test_images/credits.csv`.
