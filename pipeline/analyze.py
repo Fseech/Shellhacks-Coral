@@ -79,6 +79,7 @@ def analyze_all():
         SELECT id, taken_at, lat, lon, health, paleness, verdict, dhw, neighbor_count, status
         FROM snapshots
         WHERE status IN ('scored', 'analyzed') AND paleness IS NOT NULL
+          AND trigger IS DISTINCT FROM 'color_demo'   -- color-card demo: no heat data
     """)
     rows = cur.fetchall()
 

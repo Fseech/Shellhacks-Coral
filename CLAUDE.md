@@ -67,6 +67,22 @@ python3 capture.py --demo-date 2023-08-20          # Pi
 - Photos wait in `device/pi/outbox/` and move to `device/pi/sent/` after upload. Both folders are git-ignored: never commit captured photos.
 - Then run `python3 worker.py` and `python3 analyze.py` from `pipeline/`.
 
+## Live color-card demo (red = alive, blue = dead)
+
+For the judges we pass colored cards in front of the camera instead of real coral. Demo rows skip Gemini and all heat data.
+
+```bash
+cd device/pi && set -a; source ../../.env; set +a
+python3 capture.py --color-demo            # Pi (add --usb on a Mac, --always without the Arduino button)
+cd pipeline && set -a; source ../.env; set +a
+python3 color_demo.py                      # scores demo rows and publishes them to the website
+```
+
+- `capture.py --color-demo` saves one snapshot per card (card steady for 4 frames; the next save needs the card to leave or change color). Rows get `trigger = 'color_demo'`, the simulated location, `temp_c = NULL`, `is_test = TRUE`.
+- `pipeline/color_demo.py` sets `verdict` to `demo_alive` (red), `demo_dead` (blue) or `demo_unclear`, `coral_type` to `Live coral (demo card)` / `Dead coral (demo card)`, leaves `dhw`/`paleness`/neighbors NULL and sets `status = 'analyzed'`.
+- `worker.py` and `analyze.py` skip `trigger = 'color_demo'` rows. The website labels them "Alive (demo)" / "Dead (demo)" and hides the heat fields.
+- The simulated route starts at Looe Key, so demo rows appear under "Florida Keys - Looe Key" on the Explore page.
+
 ## Database
 
 - Tiger Cloud (Postgres + TimescaleDB), database `tsdb`.

@@ -43,8 +43,19 @@ function formatDate(value: string) {
   }).format(new Date(value))} UTC`;
 }
 
+const DEMO_VERDICTS: Record<string, string> = {
+  demo_alive: 'Alive (demo)',
+  demo_dead: 'Dead (demo)',
+  demo_unclear: 'No card (demo)',
+};
+
+function isColorDemo(observation: ReefObservation) {
+  return Boolean(observation.verdict?.startsWith('demo_'));
+}
+
 function verdictName(value: string | null) {
   if (!value) return 'No verdict';
+  if (DEMO_VERDICTS[value]) return DEMO_VERDICTS[value];
   return value.replaceAll('_', ' ');
 }
 
@@ -692,14 +703,26 @@ function ObservationRow({ observation }: { observation: ReefObservation }) {
         <p className="observation-meta">{formatDate(observation.taken_at)} · {observation.lat.toFixed(4)}, {observation.lon.toFixed(4)}</p>
         {observation.verdict_reason && <p className="observation-reason">{observation.verdict_reason}</p>}
         <div className="observation-facts">
-          <span><b>Health</b> {healthName(observation.health)}</span>
-          <span><b>Paleness</b> {formatValue(observation.paleness, '/6')}</span>
-          <span><b>Confidence</b> {formatPercent(observation.confidence)}</span>
-          <span><b>NOAA DHW</b> {formatValue(observation.dhw)}</span>
-          <span><b>Neighbors</b> {formatValue(observation.neighbor_count)} within 50 m / 7 d</span>
-          <span><b>Neighbor median</b> {formatValue(observation.neighbor_median, '/6')}</span>
-          <span><b>Water temperature</b> {formatValue(observation.temp_c, '°C')}</span>
-          <span><b>Depth</b> {formatValue(observation.depth_m, ' m')}</span>
+          {isColorDemo(observation) ? (
+            <>
+              <span><b>Category</b> {verdictName(observation.verdict)}</span>
+              <span><b>Detected</b> {observation.reason || 'Not recorded'}</span>
+              <span><b>Confidence</b> {formatPercent(observation.confidence)}</span>
+              <span><b>Location</b> {observation.lat.toFixed(5)}, {observation.lon.toFixed(5)} (simulated route)</span>
+              <span><b>Heat data</b> Skipped for the live demo</span>
+            </>
+          ) : (
+            <>
+              <span><b>Health</b> {healthName(observation.health)}</span>
+              <span><b>Paleness</b> {formatValue(observation.paleness, '/6')}</span>
+              <span><b>Confidence</b> {formatPercent(observation.confidence)}</span>
+              <span><b>NOAA DHW</b> {formatValue(observation.dhw)}</span>
+              <span><b>Neighbors</b> {formatValue(observation.neighbor_count)} within 50 m / 7 d</span>
+              <span><b>Neighbor median</b> {formatValue(observation.neighbor_median, '/6')}</span>
+              <span><b>Water temperature</b> {formatValue(observation.temp_c, '°C')}</span>
+              <span><b>Depth</b> {formatValue(observation.depth_m, ' m')}</span>
+            </>
+          )}
         </div>
       </div>
     </article>

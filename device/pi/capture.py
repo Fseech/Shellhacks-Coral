@@ -15,6 +15,8 @@ Run on the Pi:
     python3 capture.py --demo-date 2023-08-20   # stamp snapshots with this survey date (demo)
     python3 capture.py --always            # record without pressing the button (testing / no Arduino)
     python3 capture.py --no-upload         # save to outbox/ only, don't send to Tiger Data
+    python3 capture.py --color-demo        # LIVE DEMO: red card = alive, blue card = dead, no heat data
+                                           # (then run pipeline/color_demo.py to score and publish them)
 """
 import argparse
 import glob
@@ -41,6 +43,11 @@ except ImportError:   # older flat layout without pause.py: pausing still works 
         @staticmethod
         def set_paused(flag): pass
 
+try:                  # color-card demo (red = alive, blue = dead) lives in ../../pipeline/color_demo.py
+    import color_demo
+except ImportError:
+    color_demo = None
+
 # ------------------------------------------------------------------ settings
 DEVICE_ID = "reefcam-1"
 SOFTWARE_VERSION = "0.3"
@@ -60,6 +67,8 @@ MIN_CORAL_FRACTION = 0.30   # at least 30% of blocks must look like reef (not op
 STANDOUT = 0.25             # a block this much paler/darker than the frame's typical block
 SCENE_CHANGE = 18.0         # average pixel change (0-255) needed since the last snapshot
 COOLDOWN_S = 3.0            # never save twice within this many seconds
+DEMO_STEADY_FRAMES = 4      # color demo: card must be in view this many frames in a row
+DEMO_COOLDOWN_S = 1.0       # color demo: at most one snapshot per second
 # ---------------------------------------------------------------------------
 
 
@@ -189,6 +198,8 @@ def save_snapshot(frame, trigger, stats, arduino, args):
     """Saves the photo + ALL metadata to the outbox at the moment of capture."""
     captured = now_utc()
     lat, lon, loc_source = current_location()
+    demo = args.color_demo
+    temp_c = None if demo else arduino.temp_c     # color-card demo: no temperature / heat data
     taken_at = captured
     if args.demo_date:
         d = datetime.fromisoformat(args.demo_date)
@@ -207,8 +218,9 @@ def save_snapshot(frame, trigger, stats, arduino, args):
         "clock_synced": clock_synced(),
         "lat": lat, "lon": lon, "location_source": loc_source,
         "depth_m": args.depth, "depth_source": "manual",
-        "temp_c": arduino.temp_c,
-        "temp_source": "Grid-EYE AMG8833 (infrared, surface reading)" if arduino.temp_c is not None else None,
+        "temp_c": temp_c,
+        "temp_source": "Grid-EYE AMG8833 (infrared, surface reading)" if temp_c is not None else None,
+        "demo_mode": "color_card (red = alive, blue = dead)" if demo else None,
         "trigger": trigger,                    # "auto" = picked by the filter while recording
         "filter": stats,
         "image_width": w, "image_height": h,
@@ -217,7 +229,7 @@ def save_snapshot(frame, trigger, stats, arduino, args):
     }
     with open(os.path.join(OUTBOX, snap_id + ".json"), "w") as f:
         json.dump(meta, f, indent=2)
-    print(f"Saved {snap_id} ({trigger}) at {lat},{lon}  temp={arduino.temp_c}")
+    print(f"Saved {snap_id} ({trigger}) at {lat},{lon}  temp={temp_c}")
     return snap_id
 
 
@@ -250,7 +262,10 @@ def upload_loop(arduino):
                         (os.path.basename(image_path), meta["taken_at"], meta["lat"], meta["lon"],
                          psycopg2.Binary(photo), meta["device_id"], meta["depth_m"],
                          meta["temp_c"], meta["trigger"], meta["survey_id"], json.dumps(meta),
-                         meta["demo_date_used"] or meta["location_source"] == "simulated",
+                         meta["demo_date_used"] or meta["location_source"] == "simulated"
+                         or bool(meta.get("demo_mode")),
+                         "color-card demo: red = alive, blue = dead; simulated location; no heat data"
+                         if meta.get("demo_mode") else
                          "live device demo (simulated location)" if meta["location_source"] == "simulated" else None))
                     con.commit()
                     shutil.move(meta_path, os.path.join(SENT, os.path.basename(meta_path)))
@@ -293,6 +308,8 @@ def main():
     parser.add_argument("--depth", type=float, default=DEFAULT_DEPTH_M, help="depth in meters")
     parser.add_argument("--survey-id", default=now_utc().strftime("survey-%Y%m%d-%H%M"))
     parser.add_argument("--no-upload", action="store_true", help="only save to the outbox")
+    parser.add_argument("--color-demo", action="store_true",
+                        help="LIVE DEMO: save a snapshot when a red (alive) or blue (dead) card is shown; no heat data")
     parser.add_argument("--always", action="store_true",
                         help="record all the time, no button needed (testing without the Arduino)")
     args = parser.parse_args()
@@ -302,6 +319,13 @@ def main():
     synced = clock_synced()
     if synced is False:
         print("WARNING: the Pi's clock is not synced to the internet - timestamps may be wrong.")
+
+    if args.color_demo:
+        if color_demo is None:
+            sys.exit("--color-demo needs pipeline/color_demo.py (run from the repo's device/pi folder).")
+        print("COLOR DEMO: show a RED card (alive) or a BLUE card (dead) to the camera.")
+    last_label = "--"
+    candidate, streak, shown = None, 0, None     # color-demo card tracking
 
     arduino = Arduinos()
     if not args.no_upload:
@@ -353,7 +377,24 @@ def main():
             stats = frame_stats(frame)
             change, small = scene_change(frame, last_small)
 
-            if (recording
+            if args.color_demo:
+                # One snapshot per card: save when a card is steady in view for a few frames,
+                # then wait until the card leaves (or changes color) before saving again.
+                label, red, blue = color_demo.classify(frame)
+                if label == candidate:
+                    streak += 1
+                else:
+                    candidate, streak = label, 1
+                if streak >= DEMO_STEADY_FRAMES:
+                    if candidate is None:
+                        shown = None                      # card gone: ready for the next one
+                    elif candidate != shown and recording and now - last_save > DEMO_COOLDOWN_S:
+                        stats.update(red_fraction=round(red, 3), blue_fraction=round(blue, 3), card=label)
+                        save_snapshot(frame, color_demo.DEMO_TRIGGER, stats, arduino, args)
+                        print(f"   -> {'RED card = ALIVE' if label == 'alive' else 'BLUE card = DEAD'}", flush=True)
+                        shown, last_save, last_label = candidate, now, label.upper()
+                        saved += 1
+            elif (recording
                     and now - last_save > COOLDOWN_S
                     and stats["coral_fraction"] >= MIN_CORAL_FRACTION
                     and stats["standout"] >= STANDOUT
@@ -365,7 +406,8 @@ def main():
             if now - last_screen >= 1:
                 last_screen = now
                 temp = f"{arduino.temp_c:.1f}C" if arduino.temp_c is not None else "--"
-                arduino.show(f"Temp {temp}", f"{'REC   ' if recording else 'Paused'} Pics:{saved}", saved)
+                line1 = f"Demo: {last_label}" if args.color_demo else f"Temp {temp}"
+                arduino.show(line1, f"{'REC   ' if recording else 'Paused'} Pics:{saved}", saved)
 
             if frames % 60 == 0:   # a status line every ~2 seconds, handy for tuning the filter
                 print(f"frame {frames}: recording={'yes' if recording else 'no'} "

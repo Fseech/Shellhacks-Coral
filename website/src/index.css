@@ -1180,6 +1180,19 @@ select:focus-visible {
   border-color: #d49b08;
 }
 
+.status-demo_alive {
+  color: #9b1c1c;
+  background: #ffe9e9;
+  border-color: #e02424;
+}
+
+.status-demo_dead {
+  color: #0b3d91;
+  background: #e6efff;
+  border-color: #1d4ed8;
+}
+
+.status-demo_unclear,
 .status-non_heat_stress,
 .status-dead_or_algae,
 .status-not_coral {

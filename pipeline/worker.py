@@ -50,7 +50,9 @@ def ask_gemini(image_data):
 def process_new_snapshots():
     con = connect()
     cur = con.cursor(cursor_factory=RealDictCursor)
-    cur.execute("SELECT id, taken_at, image_data FROM snapshots WHERE status = 'new'")
+    # color-card demo rows are scored by color_demo.py, not Gemini
+    cur.execute("SELECT id, taken_at, image_data FROM snapshots "
+                "WHERE status = 'new' AND trigger IS DISTINCT FROM 'color_demo'")
     rows = cur.fetchall()
 
     import pause
