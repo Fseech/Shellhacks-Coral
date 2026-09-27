@@ -17,6 +17,7 @@ import {
   X,
 } from 'lucide-react';
 import { REEF_LOCATIONS } from './data/reefLocations';
+import { IS_STATIC, snapshotImage, staticApi } from './staticApi';
 import { LAND_ROWS, MAP_STEP, MAP_TOP_LAT } from './data/worldDots';
 import type { ReefLocation, ReefObservation } from './types/reefWatch';
 
@@ -151,6 +152,11 @@ function useRevealOnScroll() {
 }
 
 async function readApi<T>(url: string, signal: AbortSignal): Promise<ApiPayload<T>> {
+  if (IS_STATIC) {
+    const payload = await staticApi(url) as ApiPayload<T>;
+    if (signal.aborted) throw new DOMException('Aborted', 'AbortError');
+    return payload;
+  }
   const response = await fetch(url, { signal });
   const payload = await response.json() as ApiPayload<T>;
   if (!response.ok) throw new Error(payload.error || 'The data service is unavailable.');
@@ -222,7 +228,7 @@ export default function ReefWatchApp() {
 
       {page === 'overview' ? <OverviewPage /> : <ExplorePage />}
 
-      <ChatWidget />
+      {!IS_STATIC && <ChatWidget />}
 
       <footer className="site-footer">
         <div className="footer-inner">
@@ -334,7 +340,7 @@ function OverviewPage() {
           <div className="hero-card">
             <a className="hero-card-link" href="/explore">
               <img
-                src={`/api/observations/${encodeURIComponent(latest.sample_id!)}/image?takenAt=${encodeURIComponent(latest.sample_taken_at!)}`}
+                src={snapshotImage(latest.sample_id!, latest.sample_taken_at!)}
                 alt=""
               />
               <span className="hero-card-copy">
@@ -726,7 +732,7 @@ function ExplorePage() {
               >
                 <span className="reef-disc">
                   {place.sample_id && place.sample_taken_at
-                    ? <img src={`/api/observations/${encodeURIComponent(place.sample_id)}/image?takenAt=${encodeURIComponent(place.sample_taken_at)}`} alt="" loading="lazy" />
+                    ? <img src={snapshotImage(place.sample_id, place.sample_taken_at)} alt="" loading="lazy" />
                     : <Waves size={20} />}
                   {isSelected && <span className="reef-check"><Check size={13} strokeWidth={3} /></span>}
                 </span>
@@ -843,17 +849,18 @@ function RawDataSection() {
           <h2 id="raw-data-title">Take the <em>raw data.</em></h2>
           <p className="raw-lede">
             Every analyzed snapshot comes with its AI scores, NOAA heat value, neighbor comparison and verdict.
-            Download it or pull it straight from the read-only API.
+            {IS_STATIC ? 'Download the full dataset below.' : 'Download it or pull it straight from the read-only API.'}
           </p>
           <div className="raw-downloads">
-            <a className="pill pill-dark" href="/api/export?format=csv" download><Download size={15} /> Full dataset · CSV</a>
-            <a className="pill pill-outline" href="/api/export?format=json" download><Download size={15} /> JSON</a>
+            <a className="pill pill-dark" href={IS_STATIC ? '/data/reef-watch.csv' : '/api/export?format=csv'} download><Download size={15} /> Full dataset · CSV</a>
+            <a className="pill pill-outline" href={IS_STATIC ? '/data/reef-watch.json' : '/api/export?format=json'} download><Download size={15} /> JSON</a>
           </div>
           <p className="fine-print">
             Rows marked is_test are simulated observations paired with real NOAA heat history. Test photos come from
             Wikimedia Commons under their Creative Commons licenses.
           </p>
         </div>
+        {!IS_STATIC && (
         <div className="api-block">
           <span className="mono-label">API · read-only · no key needed</span>
           <pre>{`# everything, as CSV
@@ -868,6 +875,7 @@ curl -G "${origin}/api/export" \\
 # any point: {"kind":"coordinates","lat":-16.87,"lon":146.23}
 # dataset totals: GET /api/summary`}</pre>
         </div>
+        )}
       </div>
       <dl className="field-guide">
         {FIELD_GUIDE.map(([field, meaning]) => (
@@ -1130,7 +1138,7 @@ function CoralBar({ reefs, radiusLabel, units, records, pickingFor, onCompare, o
 }
 
 function coralImage(observation: ReefObservation) {
-  return `/api/observations/${encodeURIComponent(observation.id)}/image?takenAt=${encodeURIComponent(observation.taken_at)}`;
+  return snapshotImage(observation.id, observation.taken_at);
 }
 
 function CoralDisc({ observation, size }: { observation: ReefObservation; size: 'tiny' | 'tray' | 'small' | 'medium' | 'large' }) {
@@ -1231,9 +1239,9 @@ function NetworkPanel({ observation, units, onClose, onCompare, ref }: NetworkPa
         <button className="pill pill-dark" type="button" onClick={onCompare}>
           <GitCompare size={15} /> Compare with another coral
         </button>
-        <button className="pill pill-outline" type="button" onClick={() => askAssistant(coralQuestion(observation), `Explain this ${observation.coral_type || 'coral'} from ${siteLabel(observation.place_name)}`)}>
+        {!IS_STATIC && <button className="pill pill-outline" type="button" onClick={() => askAssistant(coralQuestion(observation), `Explain this ${observation.coral_type || 'coral'} from ${siteLabel(observation.place_name)}`)}>
           <Sparkles size={15} /> Ask AI about this coral
-        </button>
+        </button>}
       </div>
     </article>
   );
@@ -1435,7 +1443,7 @@ function ComparePanel({ a, b, units, onSwap, onClear, onRepick }: ComparePanelPr
       </div>
 
       <div className="compare-actions">
-        <button className="pill pill-hot" type="button" onClick={() => askAssistant(comparisonQuestion(a, b), `Explain this comparison: ${a.coral_type || 'coral A'} vs ${b.coral_type || 'coral B'}`)}><Sparkles size={15} /> Ask AI to explain this comparison</button>
+        {!IS_STATIC && <button className="pill pill-hot" type="button" onClick={() => askAssistant(comparisonQuestion(a, b), `Explain this comparison: ${a.coral_type || 'coral A'} vs ${b.coral_type || 'coral B'}`)}><Sparkles size={15} /> Ask AI to explain this comparison</button>}
         <button className="pill pill-outline" type="button" onClick={onRepick}><GitCompare size={15} /> Pick a different coral</button>
         <button className="pill pill-outline" type="button" onClick={onSwap}><ArrowLeftRight size={15} /> Swap sides</button>
         <button className="pill pill-outline" type="button" onClick={onClear}><X size={15} /> Close</button>

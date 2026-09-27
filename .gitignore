@@ -10,6 +10,8 @@ device/pi/sent/
 # website
 website/node_modules/
 website/dist/
+website/dist-static/
+website/reef-watch-site.zip
 website/.env
 website/.env.local
 
