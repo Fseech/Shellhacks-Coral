@@ -146,11 +146,15 @@ class Arduinos:
         """True when the Arduino's button says Paused. With no Arduino, nothing is paused."""
         return self.sensor is not None and not self.recording
 
-    def show(self, line1, line2):
-        """Writes two lines on the Arduino's screen (16 characters each)."""
+    def show(self, line1, line2, saved=0):
+        """Updates the Arduino's screen.
+        arduino_reefwatch (announces itself as a screen): gets both lines.
+        arduino_all_in_one (draws its own screen): gets just the photo count, as C<number>."""
         try:
             if self.display:
                 self.display.write(f"1:{line1[:16]}\n2:{line2[:16]}\n".encode())
+            elif self.sensor:
+                self.sensor.write(f"C{saved}\n".encode())
         except Exception:
             pass
 
@@ -333,7 +337,7 @@ def main():
                 if now - last_screen >= 1:
                     last_screen = now
                     temp = f"{arduino.temp_c:.1f}C" if arduino.temp_c is not None else "--"
-                    arduino.show(f"Temp {temp}", f"Paused Pics:{saved}")
+                    arduino.show(f"Temp {temp}", f"Paused Pics:{saved}", saved)
                 time.sleep(0.2)
                 continue
 
@@ -361,7 +365,7 @@ def main():
             if now - last_screen >= 1:
                 last_screen = now
                 temp = f"{arduino.temp_c:.1f}C" if arduino.temp_c is not None else "--"
-                arduino.show(f"Temp {temp}", f"{'REC   ' if recording else 'Paused'} Pics:{saved}")
+                arduino.show(f"Temp {temp}", f"{'REC   ' if recording else 'Paused'} Pics:{saved}", saved)
 
             if frames % 60 == 0:   # a status line every ~2 seconds, handy for tuning the filter
                 print(f"frame {frames}: recording={'yes' if recording else 'no'} "
