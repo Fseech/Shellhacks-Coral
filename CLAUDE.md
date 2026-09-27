@@ -2,6 +2,8 @@
 
 Finds heat-resistant corals. A diver device photographs corals, AI scores their health, and NOAA heat data decides whether each coral is tougher than its neighbors.
 
+Why this project exists, who it's for and what it looks for: read `README.md` before changing code.
+
 ## Architecture
 
 Every part connects only to one cloud database. The parts never talk to each other; the `status` column hands work from one to the next.
