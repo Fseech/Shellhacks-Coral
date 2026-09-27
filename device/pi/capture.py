@@ -1,7 +1,7 @@
 """
 capture.py - the ReefWatch device (runs on the Raspberry Pi).
 
-  Arduino 1's button toggles recording ON / OFF. Arduino 2's screen shows temperature, REC and photo count.
+  The Arduino's button toggles recording ON / OFF. Its screen shows temperature, REC and photo count.
   While ON: camera frames -> quick color check -> "significant" frame? -> save photo + metadata to outbox/
   uploader (background) -> sends outbox/ to Tiger Data, retries when offline -> moves to sent/
   Every saved photo gets: time, simulated location, depth, Grid-EYE temperature.
@@ -81,19 +81,19 @@ def current_location():
 
 # ------------------------------------------------------------------ Arduinos
 class Arduinos:
-    """Talks to the two Arduinos over USB. Each one is recognized by what it sends.
+    """Talks to the Arduino (arduino_reefwatch) over USB. Its port is recognized by what it sends.
 
-    Arduino 1 (arduino_sensor)  -> Pi, once a second:   {"temp_c": 24.6, "recording": 1}
-    Arduino 2 (arduino_display) -> Pi, at startup:      === ReefWatch display ===
-    Pi -> Arduino 2, once a second:                     1:Temp 24.6C   and   2:REC   Pics:12
+    Arduino -> Pi, once a second:   {"temp_c": 24.6, "recording": 1}   (sensor + button)
+    Arduino -> Pi, at startup:      === ReefWatch display ===          (screen)
+    Pi -> Arduino, once a second:   1:Temp 24.6C   and   2:REC   Pics:12
     """
 
     def __init__(self):
         self.temp_c = None
         self.recording = False
         self.last_seen = None
-        self.sensor = None      # serial port of Arduino 1, once recognized
-        self.display = None     # serial port of Arduino 2, once recognized
+        self.sensor = None      # port sending temperature + button
+        self.display = None     # port showing the screen (same Arduino)
         self.ports = []
         try:
             import serial
@@ -107,8 +107,8 @@ class Arduinos:
                 time.sleep(3)   # each Arduino restarts when its port opens
         except Exception as e:
             print("Arduinos not available:", e)
-        print("Arduino 1 (sensor + button):", self.sensor.port if self.sensor else "not found")
-        print("Arduino 2 (display):", self.display.port if self.display else "not found (fine for the all-in-one sketch)")
+        print("Arduino sensor + button:", self.sensor.port if self.sensor else "not found")
+        print("Arduino screen:", self.display.port if self.display else "not found")
 
     def _read_loop(self, port):
         while True:
@@ -130,13 +130,11 @@ class Arduinos:
             except Exception:
                 time.sleep(0.5)
 
-    def show(self, line1, line2, saved):
-        """Updates the screen: Arduino 2's lines, or the photo count for an all-in-one Arduino."""
+    def show(self, line1, line2):
+        """Writes two lines on the Arduino's screen (16 characters each)."""
         try:
             if self.display:
                 self.display.write(f"1:{line1[:16]}\n2:{line2[:16]}\n".encode())
-            elif self.sensor:
-                self.sensor.write(f"C{saved}\n".encode())   # all-in-one sketch shows this count
         except Exception:
             pass
 
@@ -207,7 +205,7 @@ def save_snapshot(frame, trigger, stats, arduino, args):
 def upload_loop(arduino):
     """Every few seconds: send whatever is in the outbox. If offline, keep it and try again."""
     # database.py lives next to this file on the Pi, or two folders up in the repo
-    sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
+    sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "pipeline"))
     from database import connect
     import psycopg2
     while True:
@@ -324,7 +322,7 @@ def main():
             if now - last_screen >= 1:
                 last_screen = now
                 temp = f"{arduino.temp_c:.1f}C" if arduino.temp_c is not None else "--"
-                arduino.show(f"Temp {temp}", f"{'REC   ' if recording else 'Paused'} Pics:{saved}", saved)
+                arduino.show(f"Temp {temp}", f"{'REC   ' if recording else 'Paused'} Pics:{saved}")
 
             if frames % 60 == 0:   # a status line every ~2 seconds, handy for tuning the filter
                 print(f"frame {frames}: recording={'yes' if recording else 'no'} "

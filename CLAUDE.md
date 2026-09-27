@@ -8,40 +8,32 @@ Every part connects only to one cloud database. The parts never talk to each oth
 
 | Part | Code | Database access | Picks up | Sets |
 |------|------|-----------------|----------|------|
-| Device (2 Arduinos + Raspberry Pi) | `device/` | INSERT only | – | `status = 'new'` |
-| AI scorer | `worker.py` | SELECT + UPDATE | `status = 'new'` | `scored` or `error` |
-| Heat analyzer | `analyze.py` | SELECT + UPDATE | `status IN ('scored','analyzed')` | `analyzed` |
-| Website | `dashboard.py` (Streamlit) | SELECT only | `status = 'analyzed'` | – |
+| Device (1 Arduino + Raspberry Pi) | `device/` | INSERT only | – | `status = 'new'` |
+| AI scorer | `pipeline/worker.py` | SELECT + UPDATE | `status = 'new'` | `scored` or `error` |
+| Heat analyzer | `pipeline/analyze.py` | SELECT + UPDATE | `status IN ('scored','analyzed')` | `analyzed` |
+| Website | `website/` (React + Express) | none yet: shows built-in sample observations | – | – |
 
-Device: Arduino 1 reads temperature from a Grid-EYE sensor and has a start/stop recording button. Arduino 2 shows status on an LED screen (one Arduino can also do both jobs; see Device code below). The Pi records video, keeps only important snapshots, tags each with time, location, depth and temperature, stores them locally, and uploads them over Wi-Fi.
+Device: one Arduino reads temperature from a Grid-EYE sensor, has a start/stop recording button and shows status on a 16x2 screen. The Pi records video, keeps only important snapshots, tags each with time, location, depth and temperature, stores them locally, and uploads them over Wi-Fi.
 
-### Device code (`device/`)
+## Layout
 
-| File | Runs on | Job |
-|------|---------|-----|
-| `device/arduino_reefwatch/arduino_reefwatch.ino` | One Arduino | Sensor + button + screen merged into one sketch; the Pi uses its single port for both jobs |
-| `device/arduino_sensor/arduino_sensor.ino` | Arduino 1 | Averages the Grid-EYE's 64 pixels into one temperature; pin 2 button toggles recording |
-| `device/arduino_display/arduino_display.ino` | Arduino 2 | Shows the lines the Pi sends on the 16x2 screen (QAPASS 1602A, needs 5 V) |
-| `device/arduino_all_in_one/arduino_all_in_one.ino` | One Arduino (breadboard prototype) | Sensor, button and screen together; use instead of the two sketches above when everything is on one board |
-| `device/pi/capture.py` | Raspberry Pi (or a Mac for testing) | Camera, snapshot filter, tagging, outbox, upload; relays temperature and status to the screen |
-| `device/pi/PI_SETUP.md` | – | Step-by-step Pi setup |
+| Folder | What's in it |
+|--------|--------------|
+| `device/arduino_reefwatch/arduino_reefwatch.ino` | The Arduino sketch: Grid-EYE average, pin 2 record button, 16x2 screen (QAPASS 1602A, needs 5 V) |
+| `device/pi/capture.py` | Raspberry Pi (or a Mac for testing): camera, snapshot filter, tagging, outbox, upload; sends screen lines to the Arduino |
+| `device/pi/PI_SETUP.md` | Step-by-step Pi setup |
+| `pipeline/` | Cloud programs: `database.py`, `worker.py`, `analyze.py`, `heat.py` (+ `heat_cache.json`), and test-data tools `get_test_images.py`, `score_test_images.py`, `seed_test_data.py` (+ `regions.py`, `test_images/`) |
+| `website/` | React site (`npm install`, `npm run dev`, port 3000). Runs on sample data in `server.ts` and `src/data/mockObservations.ts`; not connected to the database |
 
-Pick ONE hardware setup. Every sketch talks to the Pi over USB at 115200 baud, and `capture.py` recognizes each board by what it sends, so it doesn't matter which USB socket is used.
+Run pipeline scripts from inside `pipeline/`: they use relative paths (`test_images/`, `heat_cache.json`). `capture.py` imports `database` from `pipeline/`.
 
-| Setup | Sketches | Who draws the screen |
-|-------|----------|----------------------|
-| Two Arduinos | `arduino_sensor` + `arduino_display` | The Pi sends both screen lines to Arduino 2 |
-| One Arduino, Pi-driven screen | `arduino_reefwatch` | The Pi sends both screen lines; the sketch shows temperature and REC/Paused on its own until the Pi connects |
-| One Arduino, self-driven screen | `arduino_all_in_one` | The sketch draws the screen itself; the Pi only sends the photo count. Re-syncs the screen every 5 s so wiring glitches clear themselves |
-
-Serial messages:
+Serial messages (USB, 115200 baud). The Pi finds the Arduino's port by what it sends:
 
 | Direction | Message | Meaning |
 |-----------|---------|---------|
-| Sensor board → Pi | `{"temp_c":24.6,"recording":1}` once a second and on every press | Grid-EYE average (`null` if the sensor is missing) and the button state |
-| Screen board → Pi | `=== ReefWatch display ===` at startup | Identifies the board that shows the Pi's screen lines (`arduino_display`, `arduino_reefwatch`) |
-| Pi → screen board | `1:Temp 24.6C` and `2:REC   Pics:12` once a second | Text for screen line 1 and line 2 |
-| Pi → `arduino_all_in_one` | `C12` once a second | Photos saved this run, shown as `Pics:12` |
+| Arduino → Pi | `{"temp_c":24.6,"recording":1}` once a second and on every press | Grid-EYE average (`null` if the sensor is missing) and the button state |
+| Arduino → Pi | `=== ReefWatch display ===` at startup | Tells the Pi this port also has the screen |
+| Pi → Arduino | `1:Temp 24.6C` and `2:REC   Pics:12` once a second | Text for screen line 1 and line 2; until these arrive the sketch shows temperature and REC/Paused itself |
 
 Wiring (Uno, same pins in every sketch): Grid-EYE SDA → A4, SCL → A5, VIN → 5V, GND → GND; button pin 2 → GND (no resistor, `INPUT_PULLUP`); screen RS 12, E 11, D4 5, D5 4, D6 3, D7 6, RW and V0 → GND, backlight A → 5V through 220 Ω. The QAPASS 1602A screen needs 5 V; a 3 V supply leaves it blank.
 
@@ -51,10 +43,11 @@ Keep these access rules when changing code: the device never updates, processors
 
 ## Running the device
 
-One time, from the repo folder (adds the device columns; `python3 database.py` would also insert a demo photo, so don't use that):
+One time, from `pipeline/` (adds the device columns):
 
 ```bash
-set -a; source .env; set +a
+cd pipeline
+set -a; source ../.env; set +a
 python3 -c "import database; database.create_table()"
 ```
 
@@ -70,7 +63,7 @@ python3 capture.py --demo-date 2023-08-20          # Pi
 - Close Arduino IDE's Serial Monitor first; only one program can use the port.
 - Press the button to start and stop recording. `--always` ignores the button and records all the time (testing only).
 - Photos wait in `device/pi/outbox/` and move to `device/pi/sent/` after upload. Both folders are git-ignored: never commit captured photos.
-- Then run `worker.py`, `analyze.py` and `streamlit run dashboard.py` from the repo folder as usual.
+- Then run `python3 worker.py` and `python3 analyze.py` from `pipeline/`.
 
 ## Database
 
@@ -93,7 +86,7 @@ Written by the device:
 | `image_data` | BYTEA | the JPEG bytes (photos are stored in the database) |
 | `image_path` | TEXT | original file name, label only |
 | `status` | TEXT | default `'new'` |
-| `temp_c` | DOUBLE PRECISION | Grid-EYE temperature from Arduino 1 (°C), NULL if the sensor was missing |
+| `temp_c` | DOUBLE PRECISION | Grid-EYE temperature from the Arduino (°C), NULL if the sensor was missing |
 | `depth_m` | DOUBLE PRECISION | depth in meters, entered by hand for now |
 | `trigger` | TEXT | why the frame was kept, e.g. `auto` |
 | `survey_id` | TEXT | which dive or survey |
@@ -101,9 +94,9 @@ Written by the device:
 | `is_test` | BOOLEAN | TRUE for test, demo or simulated-location data |
 | `test_note` | TEXT | what is simulated and why |
 
-The device columns are created by `database.create_table()` (run `python3 -c "import database; database.create_table()"` once from the repo folder), so the device itself only INSERTs.
+The device columns are created by `database.create_table()` (run `python3 -c "import database; database.create_table()"` once from `pipeline/`), so the device itself only INSERTs.
 
-Written by the AI scorer (`worker.py`, Gemini):
+Written by the AI scorer (`pipeline/worker.py`, Gemini):
 
 | Column | Type | Meaning |
 |--------|------|---------|
@@ -113,7 +106,7 @@ Written by the AI scorer (`worker.py`, Gemini):
 | `confidence` | DOUBLE PRECISION | 0 to 1 |
 | `reason` | TEXT | one-sentence description, or the error message when `status = 'error'` |
 
-Written by the heat analyzer (`analyze.py`, NOAA Coral Reef Watch via `heat.py`):
+Written by the heat analyzer (`pipeline/analyze.py`, NOAA Coral Reef Watch via `heat.py`):
 
 | Column | Type | Meaning |
 |--------|------|---------|
@@ -135,4 +128,5 @@ High heat means `dhw >= 4`.
 
 ## Known gaps
 
+- The website doesn't read the database yet; it shows sample observations.
 - All programs share one admin login, so the access rules above are not enforced by the database. The plan is separate `device`, `processor` and `website` roles.

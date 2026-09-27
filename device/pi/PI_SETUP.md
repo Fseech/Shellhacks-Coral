@@ -1,10 +1,9 @@
 # ReefWatch — Raspberry Pi setup
 
-The Pi runs the camera. Two Arduinos plug into the Pi by USB: Arduino 1 has the Grid-EYE temperature sensor and the record button, Arduino 2 has the 16x2 screen.
+The Pi runs the camera. One Arduino plugs into the Pi by USB. It has the Grid-EYE temperature sensor, the record button and the 16x2 screen.
 
 ```
-[Button + Grid-EYE] -> Arduino 1 --USB--> Raspberry Pi + camera --Wi-Fi--> Tiger Data --> dashboard (laptop)
-                                  Arduino 2 (screen) <--USB--/
+[Button + Grid-EYE + screen] <-> Arduino --USB--> Raspberry Pi + camera --Wi-Fi--> Tiger Data --> AI scorer + heat analyzer
 ```
 
 Press the button once to start recording and press it again to stop. While recording, the Pi saves only the "interesting" frames. Each saved photo gets these tags:
@@ -18,9 +17,8 @@ Press the button once to start recording and press it again to stop. While recor
 | File | What it does |
 |---|---|
 | `device/pi/capture.py` | The main program: camera, record on/off, saving photos and metadata, uploading, updating the screen |
-| `database.py` (repo root) | Connects to Tiger Data (`capture.py` uses it) |
-| `device/arduino_sensor/arduino_sensor.ino` | Goes on **Arduino 1** (uploaded from a laptop with Arduino IDE), not the Pi |
-| `device/arduino_display/arduino_display.ino` | Goes on **Arduino 2** |
+| `pipeline/database.py` | Connects to Tiger Data (`capture.py` uses it) |
+| `device/arduino_reefwatch/arduino_reefwatch.ino` | Goes on the **Arduino** (uploaded from a laptop with Arduino IDE), not the Pi |
 
 ## 1. Flash the SD card (Raspberry Pi Imager)
 Open the settings (gear icon, or "Edit Settings") and set:
@@ -54,7 +52,7 @@ Then run `source ~/.bashrc`.
 ## 5. Copy the files over (run from the laptop, inside the repo folder `~/Desktop/reef`)
 ```bash
 ssh yourusername@reefcam-1.local "mkdir -p ~/reef"
-scp device/pi/capture.py database.py yourusername@reefcam-1.local:~/reef/
+scp device/pi/capture.py pipeline/database.py yourusername@reefcam-1.local:~/reef/
 ```
 
 ## 6. Check the clock is right
@@ -82,8 +80,8 @@ Stop it with **Ctrl+C**.
 
 ## What you'll see
 ```
-Arduino 1 (sensor + button): /dev/ttyACM0
-Arduino 2 (display): /dev/ttyACM1
+Arduino sensor + button: /dev/ttyACM0
+Arduino screen: /dev/ttyACM0
 Ready. Press the button on the breadboard to start/stop recording.
 >>> Recording ON
 Saved 20260926T153318_ffc728 (auto) at 24.546011,-81.405988  temp=27.3
@@ -95,9 +93,9 @@ Uploaded 20260926T153318_ffc728
 - Every photo has a matching `.json` file with all its tags.
 
 ## Troubleshooting
-- **"Arduino 1 ... not found" or "Arduino 2 ... not found":** check its USB cable, then run `ls /dev/ttyACM*` (you should see two). If you get "permission denied", run `sudo usermod -aG dialout $USER`, then log out and back in.
-- **`temp=None`:** Arduino 1 can't see the Grid-EYE. Check its 4 wires.
-- **Screen stuck on "Waiting for Pi":** capture.py didn't recognize Arduino 2. Unplug and replug it, then restart capture.py.
-- **"The table is missing device columns":** run `python3 -c "import database; database.create_table()"` once on the laptop, in `~/Desktop/reef` (it adds `temp_c`, `depth_m` and the other device columns).
+- **"Arduino ... not found":** check the USB cable, then run `ls /dev/ttyACM*` (you should see one). Close Arduino IDE's Serial Monitor, since only one program can use the port. If you get "permission denied", run `sudo usermod -aG dialout $USER`, then log out and back in.
+- **`temp=None`:** the Arduino can't see the Grid-EYE. Check its 4 wires.
+- **Screen says "(no Pi)":** capture.py didn't recognize the Arduino. Unplug and replug it, then restart capture.py.
+- **"The table is missing device columns":** run `python3 -c "import database; database.create_table()"` once on the laptop, in the repo's `pipeline/` folder (it adds `temp_c`, `depth_m` and the other device columns).
 - **Nothing saves while recording:** the filter only keeps frames that look like reef and have changed since the last photo. Point the camera at something colorful and move it. The `frame ...` status lines show the filter numbers.
 - **"Upload failed":** check the hotspot, and check that `echo $DATABASE_URL` prints something.

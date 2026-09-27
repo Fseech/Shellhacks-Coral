@@ -6,3 +6,7 @@ __pycache__/
 # device photos (local only; uploaded to Tiger Data, never to git)
 device/pi/outbox/
 device/pi/sent/
+
+# website
+website/node_modules/
+website/dist/

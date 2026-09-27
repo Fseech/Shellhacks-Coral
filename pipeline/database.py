@@ -80,5 +80,4 @@ def show_all():
 
 if __name__ == "__main__":
     create_table()
-    add_snapshot("coral.jpeg", 24.5470, -81.4040, "2023-08-20 10:00:13+00")
     show_all()
