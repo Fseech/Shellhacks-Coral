@@ -2,3 +2,7 @@
 tiger-cloud-reef-credentials.txt
 __pycache__/
 .DS_Store
+/Coral website code/node_modules/
+/Coral website code/dist/
+/Coral website code/.env
+/Coral website code/.env.local
