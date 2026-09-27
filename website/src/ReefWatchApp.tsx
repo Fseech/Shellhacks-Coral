@@ -1201,7 +1201,7 @@ function NetworkPanel({ observation, units, onClose, onCompare, ref }: NetworkPa
       <svg className="network-lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
         {nodes.map((_, index) => {
           const angle = (-90 + index * (360 / nodes.length)) * (Math.PI / 180);
-          return <line key={index} x1="50" y1="50" x2={50 + Math.cos(angle) * 37} y2={50 + Math.sin(angle) * 40} style={{ transitionDelay: `${index * 40}ms` }} />;
+          return <line key={index} x1="50" y1="50" x2={50 + Math.cos(angle) * 34} y2={50 + Math.sin(angle) * 37} style={{ transitionDelay: `${index * 40}ms` }} />;
         })}
       </svg>
       <div className="network-center">
@@ -1216,8 +1216,8 @@ function NetworkPanel({ observation, units, onClose, onCompare, ref }: NetworkPa
             key={node.label}
             className={`data-node${node.wide ? ' wide' : ''}${node.tone ? ` tone-${node.tone}` : ''}`}
             style={{
-              '--x': `${Math.cos(angle) * 37}%`,
-              '--y': `${Math.sin(angle) * 40}%`,
+              '--x': `${Math.cos(angle) * 34}%`,
+              '--y': `${Math.sin(angle) * 37}%`,
               transitionDelay: `${80 + index * 40}ms`,
             } as React.CSSProperties}
           >
