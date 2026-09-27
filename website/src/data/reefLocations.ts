@@ -8,7 +8,7 @@ export const REEF_LOCATIONS = [
   { name: 'Hawaii - Maui', lat: 20.63, lon: -156.5 },
   { name: 'Caribbean - Bonaire', lat: 12.15, lon: -68.3 },
   { name: 'Belize Barrier Reef', lat: 17.2, lon: -87.55 },
-  { name: 'Mexico - Puerto Morelos', lat: 20.85, lon: -86.85 },
+  { name: 'Mexico - Puerto Morelos', lat: 20.85, lon: -86.82 },
   { name: 'Indonesia - Raja Ampat', lat: -0.55, lon: 130.5 },
   { name: 'Philippines - Tubbataha', lat: 8.9, lon: 119.9 },
   { name: 'Kenya - Mombasa', lat: -4.05, lon: 39.73 },

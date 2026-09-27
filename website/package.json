@@ -12,7 +12,8 @@
     "start": "NODE_ENV=production tsx webServer.ts",
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "build:static": "VITE_STATIC=1 vite build --outDir dist-static --emptyOutDir && tsx scripts/exportStatic.ts"
   },
   "dependencies": {
     "@google/genai": "^2.24.0",

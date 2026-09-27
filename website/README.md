@@ -24,7 +24,7 @@ In-water `temp_c` appears when that column exists and contains data.
 
 The **Generate in-depth analysis** action is optional. Configure
 `GEMINI_API_KEY` as a server-side secret to enable it; the default model is
-`gemini-2.5-flash`, or set `GEMINI_MODEL` to another supported model. Only
+`gemini-3.8-flash`, or set `GEMINI_MODEL` to another supported model. Only
 per-location and per-coral-type aggregates are sent for interpretation, not
 photos, record IDs, exact coordinates, or free-text notes. The result is not
 saved to the database, and analysis requests are limited to five per hour per

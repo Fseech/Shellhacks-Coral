@@ -16,6 +16,7 @@ export interface ReefObservation {
   lon: number;
   image_path: string | null;
   has_image: boolean;
+  is_test: boolean;
   coral_type: string | null;
   health: string | null;
   paleness: number | null;
