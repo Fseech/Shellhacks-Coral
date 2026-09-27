@@ -55,19 +55,19 @@ def decide(row, neighbors, dhw):
     if dhw is None:
         return "needs_more_data", "No heat data for this spot.", None
     if len(neighbors) < MIN_NEIGHBORS:
-        return "needs_more_data", f"Only {len(neighbors)} neighbor(s) scanned so far.", None
+        return "needs_more_data", f"Only {len(neighbors)} {'neighbor' if len(neighbors) == 1 else 'neighbors'} scanned so far.", None
 
     median = statistics.median(n["paleness"] for n in neighbors)
     own = row["paleness"]
 
     if dhw >= HIGH_HEAT and median - own >= RESIST_GAP:
         return ("resistant_candidate",
-                f"Heat was high ({dhw} DHW) and its neighbors paled (median {median}/6), "
-                f"but this coral stayed at {own}/6. Candidate for nursery testing.", median)
+                f"Survivor: heat stress was high ({dhw} DHW) and its neighbors paled (median {median}/6), "
+                f"but this coral stayed at {own}/6. It is worth studying further.", median)
     if dhw < HIGH_HEAT and own >= 4 and median >= 4:
         return ("non_heat_stress",
-                f"Heat was low ({dhw} DHW) but this patch is pale (median {median}/6). "
-                f"Something besides heat may be wrong: check for sewage, runoff or disease.", median)
+                f"Unexplained damage: heat stress was low ({dhw} DHW), but this patch is pale (median {median}/6). "
+                f"Something other than heat, such as pollution, runoff or disease, is the likely cause.", median)
     return ("regular",
             f"Paleness {own}/6 fits its neighbors ({median}/6) and the heat ({dhw} DHW).", median)
 
